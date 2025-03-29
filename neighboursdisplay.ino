@@ -51,7 +51,7 @@ const int daylightOffset_sec = 0;   //Replace with your daylight offset (secs)
 
  RTC_DATA_ATTR   int firstrun = 100;
  RTC_DATA_ATTR   int page = 2;
-float abshum;
+float dewpoint;
  float minVal = 3.9;
  float maxVal = 4.2;
 RTC_DATA_ATTR int readingCount = 0; // Counter for the number of readings
@@ -562,7 +562,7 @@ void updateMain() {
   snprintf(tempStr, sizeof(tempStr), "%.1f", t);
   snprintf(humStr, sizeof(humStr), "%.1f", h);
   snprintf(presStr, sizeof(presStr), "%.0f", pres);
-  snprintf(dewStr, sizeof(dewStr), "%.1f", abshum);
+  snprintf(dewStr, sizeof(dewStr), "%.1f", dewpoint);
 
   // Draw each quadrant with title, value and unit
   centerTextInQuad(0, 0, tempStr, "°C", "Temp");
@@ -613,7 +613,7 @@ void setup()
    t = temp.temperature;
    h = humidity.relative_humidity;
    pres = bmp.readPressure() / 100.0;
-    abshum = (6.112 * pow(2.71828, ((17.67 * temp.temperature)/(temp.temperature + 243.5))) * humidity.relative_humidity * 2.1674)/(273.15 + temp.temperature);
+    dewpoint = t - ((100 - h)/5);
 
 
 
