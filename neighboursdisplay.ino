@@ -593,6 +593,10 @@ void setup()
   Wire.begin();  
 
   vBat = analogReadMilliVolts(0) / 500.0;
+  while (vBat < 2){
+    vBat = analogReadMilliVolts(0) / 500.0;
+    delay(10);
+  }
   GPIO_reason = log(esp_sleep_get_gpio_wakeup_status())/log(2);
   
 
@@ -665,6 +669,14 @@ void setup()
     }
   switch (GPIO_reason) {
     case 1: 
+      delay(50);
+      while (!digitalRead(1))
+        {
+          delay(10);
+          if (millis() > 2000) {
+            startWebserver();
+          return;}
+        }
       page = 1;
       doTempDisplay();
       break;
@@ -682,15 +694,6 @@ void setup()
       doBatDisplay();
       break;
     case 0: 
-    delay(50);
-      while (!digitalRead(0))
-        {
-          delay(10);
-          if (millis() > 2000) {
-            startWebserver();
-          return;}
-        }
-      //startWifi();
       takeSamples();
       display.clearScreen();
       switch (page){
