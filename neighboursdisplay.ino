@@ -584,7 +584,19 @@ void updateMain() {
 }
 
 
-
+void batCheck() {
+  if (vBat < 3.4){
+    wipeScreen();
+  display.fillRect(0, 0, display.width(), display.height(), GxEPD_BLACK);
+  display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);
+  display.setCursor(10,60);
+  display.setFont(FONT2);
+  display.setTextSize(1);
+  display.print("LOW BATTERY");
+  display.display(true);
+  gotosleep();
+ }
+}
 
 
 
@@ -597,6 +609,7 @@ void setup()
     vBat = analogReadMilliVolts(0) / 500.0;
     delay(10);
   }
+  batCheck();
   GPIO_reason = log(esp_sleep_get_gpio_wakeup_status())/log(2);
   
 
@@ -673,7 +686,7 @@ void setup()
       while (!digitalRead(1))
         {
           delay(10);
-          if (millis() > 2000) {
+          if (millis() > 5000) {
             startWebserver();
           return;}
         }
@@ -683,7 +696,7 @@ void setup()
     case 3: 
       page = 2;
         //wipeScreen();
-        doMainDisplay();
+        doPresDisplay();
       break;
     case 2: 
       page = 3;
@@ -695,24 +708,7 @@ void setup()
       break;
     case 0: 
       takeSamples();
-      display.clearScreen();
-      switch (page){
-        case 0: 
-          doTempDisplay();
-          break;
-        case 1: 
-          doTempDisplay();
-          break;
-        case 2: 
-          doMainDisplay();
-          break;
-        case 3: 
-          doHumDisplay();
-          break;
-        case 4: 
-          doBatDisplay();
-          break;
-      }
+      doMainDisplay();
   }
 
   
@@ -723,6 +719,6 @@ void loop()
 {
 ArduinoOTA.handle();
 if (!digitalRead(0)) {gotosleep();}
-delay(250);
+delay(20);
 
 }
