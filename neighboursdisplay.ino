@@ -50,7 +50,7 @@ const int daylightOffset_sec = 0;   //Replace with your daylight offset (secs)
   float v41_value, v42_value, v62_value;
 
  RTC_DATA_ATTR   int firstrun = 100;
- RTC_DATA_ATTR   int page = 2;
+ RTC_DATA_ATTR   int page = 0;
 float dewpoint;
  float minVal = 3.9;
  float maxVal = 4.2;
@@ -578,7 +578,7 @@ void updateMain() {
   display.fillRect(179, 192, barx, 7, GxEPD_BLACK);
   display.drawLine(198, 193, 198, 198, GxEPD_BLACK);
   display.drawLine(199, 193, 199, 198, GxEPD_BLACK);
-  display.drawRect(0, 0, display.width(), display.height(), GxEPD_BLACK);
+  //display.drawRect(0, 0, display.width(), display.height(), GxEPD_BLACK);
   
   display.display(true);
 }
@@ -664,13 +664,13 @@ void setup()
     takeSamples();
       switch (page){
         case 0: 
-          doTempDisplay();
+          doMainDisplay();
           break;
         case 1: 
           doTempDisplay();
           break;
         case 2: 
-          doMainDisplay();
+          doPresDisplay();
           break;
         case 3: 
           doHumDisplay();
@@ -707,6 +707,7 @@ void setup()
       doBatDisplay();
       break;
     case 0: 
+      page = 0;
       takeSamples();
       doMainDisplay();
   }
