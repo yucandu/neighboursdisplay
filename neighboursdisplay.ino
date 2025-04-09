@@ -269,7 +269,7 @@ void wipeScreen(){
       display.fillRect(0,0,display.width(),display.height(),GxEPD_BLACK);
     } while (display.nextPage());
     delay(10);
-    display.firstPage();
+    display.firstPage();.
     do {
       display.fillRect(0,0,display.width(),display.height(),GxEPD_WHITE);
     } while (display.nextPage());
@@ -297,7 +297,7 @@ void setupChart() {
     display.print("*");
     display.print(sleeptimeSecs, 0);
     display.print("s>");
-    int barx = mapf(vBat, 3.3, 4.15, 0, 19); // Map battery value to progress bar width
+    int barx = mapf(vBat, 3.3, 4.1, 0, 19); // Map battery value to progress bar width
     if (barx > 19) { barx = 19; }
     if (barx < 0) { barx = 0; }
     // Adjusted rectangle and progress bar to fit within bounds
@@ -528,7 +528,7 @@ void doBatDisplay() {
         display.print("s>");
         display.setCursor(175, 193); // Adjusted for new width
 
-        int batPct = mapf(vBat, 3.3, 4.15, 0, 100);
+        int batPct = mapf(vBat, 3.3, 4.1, 0, 100);
         display.setCursor(80, 0); // Same placement
         display.print("[vBat: ");
         display.print(vBat, 3);
@@ -632,7 +632,7 @@ void updateMain() {
 
   // Battery status (unchanged)
   display.setFont();
-  int barx = mapf(vBat, 3.3, 4.15, 0, 19);
+  int barx = mapf(vBat, 3.3, 4.1, 0, 19);
   if (barx > 19) { barx = 19; }
   display.drawRect(179, 192, 19, 7, GxEPD_BLACK);
   display.fillRect(179, 192, barx, 7, GxEPD_BLACK);
