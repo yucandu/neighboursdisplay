@@ -269,7 +269,7 @@ void wipeScreen(){
       display.fillRect(0,0,display.width(),display.height(),GxEPD_BLACK);
     } while (display.nextPage());
     delay(10);
-    display.firstPage();.
+    display.firstPage();
     do {
       display.fillRect(0,0,display.width(),display.height(),GxEPD_WHITE);
     } while (display.nextPage());
