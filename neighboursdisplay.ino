@@ -8,8 +8,8 @@
 #include <ArduinoOTA.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
-
-
+#include <WiFiManager.h> 
+#include <Preferences.h>
 Adafruit_AHTX0 aht;
 Adafruit_BMP280 bmp;
 sensors_event_t humidity, temp;
@@ -34,15 +34,24 @@ const char* password = "springchicken";
 
 #define ENABLE_GxEPD2_GFX 1
 #define TIME_TIMEOUT 20000
-#define sleeptimeSecs 300
+int sleeptimeSecs=300;
 #define maxArray 501
 
-
+#define MENU_MAX 5
+int menusel = 1;
+bool editinterval = false;
+Preferences preferences;
+RTC_DATA_ATTR bool showDewpoint = false;  // false = humidity, true = dewpoint
+WiFiManager wm;
+// Add with other globals at top
+RTC_DATA_ATTR int displayRotation = 2;  // 1-4 for display rotation
+bool editRotation = false;  // For editing rotation in menu
 RTC_DATA_ATTR float array1[maxArray];
 RTC_DATA_ATTR float array2[maxArray];
 RTC_DATA_ATTR float array3[maxArray];
 RTC_DATA_ATTR float array4[maxArray];
 RTC_DATA_ATTR float windspeed, windgust, fridgetemp, outtemp;
+
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = -18000;  //Replace with your GMT offset (secs)
 const int daylightOffset_sec = 0;   //Replace with your daylight offset (secs)
@@ -172,45 +181,84 @@ void startWifi(){
 }
 
 void startWebserver(){
-
-  //display.clearScreen();
-  display.setFont();
   display.setPartialWindow(0, 0, display.width(), display.height());
-  display.setCursor(0, 0);
-  display.firstPage();
-
-  do {
-    display.print("Connecting...");
-  } while (display.nextPage());
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);  
-  WiFi.setTxPower (WIFI_POWER_8_5dBm);
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
-    if (millis() > 20000) { display.print("!"); }
-    if ((millis() > 30000)) {gotosleep();}
-    //do {
-      display.print(".");
-       display.display(true);
-    //} while (display.nextPage());
-    delay(1000);
-  }
   wipeScreen();
-  display.setCursor(0, 0);
-  display.firstPage();
-  do {
-    display.print("Connected! to: ");
-    display.println(WiFi.localIP());
-  } while (display.nextPage());
-  ArduinoOTA.setHostname("neighbourdisp");
-  ArduinoOTA.begin();
-  display.println("ArduinoOTA started");
-    display.print("RSSI: ");
-    display.println(WiFi.RSSI());
-   display.display(true);
+  display.setCursor(0, 0);                                  //
+  display.println("Use your mobile phone to connect to ");
+  display.println("[BMO Setup] then browse to");
+  display.println("http://192.168.4.1 to connect to WiFi");
+  display.display(true);
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower (WIFI_POWER_8_5dBm);
+  wm.setConfigPortalTimeout(300);
+    bool res;
+    res = wm.autoConnect("BMO Setup");
+    if (res) {
+        ArduinoOTA.setHostname("neighbourdisp");
+        ArduinoOTA.begin();
+      }
+    
+  displayMenu();
 }
 
+void displayMenu() {
+  display.setPartialWindow(0, 0, display.width(), display.height());
+  display.setTextSize(1);
+  display.fillScreen(GxEPD_WHITE);
+  display.setCursor(0, 0);
+  display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);
+  
+  if (WiFi.status() == WL_CONNECTED) {
+      display.print("Connected to: ");
+      display.println(WiFi.localIP());
+      display.print("RSSI: ");
+      display.println(WiFi.RSSI());
+      display.println("");
+  } else {
+      display.setCursor(0, 8*3);
+  }
 
+  // Menu items
+  if (menusel == 1) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.println("Start WifiManager");
+
+  if (menusel == 2) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.println("Change Interval");
+
+  if (menusel == 3) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.print("Toggle Chart: ");
+  display.println(showDewpoint ? "Dewpoint" : "Humidity");
+
+  if (menusel == 4) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.println("Set Rotation");
+
+  if (menusel == 5) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.println("Exit");
+
+  // Show current interval when editing
+  display.setCursor(120, 8*4);
+  if (editinterval) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.print(sleeptimeSecs);
+  display.println(" secs");
+  // Show rotation value when editing
+  display.setCursor(120, 8*6);
+  if (editRotation) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} 
+  else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+  display.print(displayRotation);
+
+  // Status area at bottom
+  display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);
+  display.setCursor(0, 70);
+  display.print("T:");
+  display.print(t, 1);
+  display.print("C H:");
+  display.print(h, 1);
+  display.print("% P:");
+  display.print(pres, 0);
+  display.print("hPa");
+
+  display.display(true);
+}
 
 void wipeScreen(){
 
@@ -358,10 +406,20 @@ void doHumDisplay() {
         }
 
         setupChart();
+        
         display.print("[");
-        display.print("Hum: ");
-        display.print(array2[(maxArray - 1)], 2);
-        display.print("g");
+        if (!showDewpoint) {
+          display.print("Hum: ");
+          display.print(array2[(maxArray - 1)], 2);
+          display.print("%");
+        }
+        else {         
+          display.print("Dewp: ");
+          display.print(array2[(maxArray - 1)], 2);
+          display.print(char(247));
+          display.print("c");
+          display.print("");
+        }
         display.print("]");
     } while (display.nextPage());
 
@@ -412,7 +470,7 @@ void doPresDisplay() {
         display.print("[");
         display.print("Pres: ");
         display.print(array3[(maxArray - 1)], 2);
-        display.print("mb");
+        display.print("hPa");
         display.print("]");
     } while (display.nextPage());
 
@@ -506,7 +564,9 @@ void takeSamples(){
         for (int i = 0; i < (maxArray - 1); i++) {
             array2[i] = array2[i + 1];
         }
-        array2[(maxArray - 1)] = h;
+        if (!showDewpoint)
+        {array2[(maxArray - 1)] = h;}
+        else {array2[(maxArray - 1)] = dewpoint;}
 
 
 
@@ -603,7 +663,11 @@ void batCheck() {
 void setup()
 {
   Wire.begin();  
-
+  preferences.begin("my-app", false);
+  sleeptimeSecs = preferences.getInt("sleeptimeSecs", 300);
+  showDewpoint = preferences.getBool("showDewpoint", false); 
+  displayRotation = preferences.getInt("rotation", 2);
+  preferences.end();
   vBat = analogReadMilliVolts(0) / 500.0;
   while (vBat < 2){
     vBat = analogReadMilliVolts(0) / 500.0;
@@ -631,7 +695,7 @@ void setup()
 
 
   display.init(115200, false, 10, false); // void init(uint32_t serial_diag_bitrate, bool initial, uint16_t reset_duration = 10, bool pulldown_rst_mode = false)
-  display.setRotation(2);
+  display.setRotation(displayRotation);
   display.setFont();
   pinMode(0, INPUT_PULLUP);
   pinMode(1, INPUT_PULLUP);
@@ -687,7 +751,8 @@ void setup()
         {
           delay(10);
           if (millis() > 5000) {
-            startWebserver();
+            while (!digitalRead(1)){delay(1);}
+            displayMenu();
           return;}
         }
       page = 1;
@@ -718,8 +783,79 @@ void setup()
 
 void loop()
 {
-ArduinoOTA.handle();
-if (!digitalRead(0)) {gotosleep();}
-delay(20);
+  if (WiFi.status() == WL_CONNECTED) {
+    ArduinoOTA.handle();
+  }
+    
+  if (!digitalRead(3)) {
+    if (editRotation) {
+      displayRotation++;
+      if (displayRotation > 4) displayRotation = 1;
+      display.setRotation(displayRotation);
+    } else if (editinterval) {
+        sleeptimeSecs += 30;
+        if (sleeptimeSecs > 3600) sleeptimeSecs = 30;
+    } else {
+        menusel++;
+        if (menusel > MENU_MAX) menusel = 1;
+    }
+    displayMenu();
+    delay(200);
+}
+
+if (!digitalRead(1)) {
+    if (editRotation) {
+      displayRotation--;
+      if (displayRotation < 1) displayRotation = 4;
+      display.setRotation(displayRotation);
+    } else if (editinterval) {
+        sleeptimeSecs -= 30;
+        if (sleeptimeSecs < 30) sleeptimeSecs = 3600;
+    } else {
+        menusel--;
+        if (menusel < 1) menusel = MENU_MAX;
+    }
+    displayMenu();
+    delay(200);
+}
+
+if (!digitalRead(0)) {
+    switch (menusel) {
+        case 1:  // Start WiFiManager
+            startWebserver();
+            break;
+        case 2:  // Edit Interval
+            editinterval = !editinterval;
+            if (!editinterval) {  // Save when exiting edit mode
+              preferences.begin("my-app", false);
+              preferences.putInt("sleeptimeSecs", sleeptimeSecs);
+              preferences.end();
+            }
+            displayMenu();
+            break;
+        case 3:  // Toggle Chart Type
+            showDewpoint = !showDewpoint;
+            preferences.begin("my-app", false);
+            preferences.putBool("showDewpoint", showDewpoint);
+            preferences.end();
+            displayMenu();
+            break;
+        case 4:  // Rotation
+            editRotation = !editRotation;
+            if (!editRotation) {  // Save when exiting edit mode
+                preferences.begin("my-app", false);
+                preferences.putInt("rotation", displayRotation);
+                preferences.end();
+            }
+            displayMenu();
+            break;
+        case 5:  // Exit
+            esp_sleep_enable_timer_wakeup(1 * 1000000ULL);
+            delay(1);
+            esp_deep_sleep_start();
+            break;
+    }
+    delay(200);
+}
 
 }
