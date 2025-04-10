@@ -38,7 +38,7 @@ const char* password = "springchicken";
 int sleeptimeSecs = 300;
 #define maxArray 501
 
-#define MENU_MAX 6
+#define MENU_MAX 7
 int menusel = 1;
 bool editinterval = false;
 Preferences preferences;
@@ -48,6 +48,8 @@ WiFiManager wm;
 // Add with other globals at top
 RTC_DATA_ATTR int displayRotation = 2;  // 1-4 for display rotation
 RTC_DATA_ATTR int bmo = 1;  // 1-3
+RTC_DATA_ATTR int tickRate = 12;  // 1-3
+bool editTickRate = false;  // For editing mode
 bool editRotation = false;              // For editing rotation in menu
 RTC_DATA_ATTR float array1[maxArray];
 RTC_DATA_ATTR float array2[maxArray];
@@ -218,7 +220,7 @@ void displayMenu() {
 
 
   if (WiFi.status() == WL_CONNECTED) {
-    display.setCursor(0, 160);
+    display.setCursor(0, 170);
     display.print("Connected to: ");
     display.println(WiFi.localIP());
     display.print("RSSI: ");
@@ -231,31 +233,49 @@ void displayMenu() {
     if (menusel == 1) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.println("Start WifiManager");
 
+    // Change Interval
     if (menusel == 2) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Change Interval");
-    display.setCursor(160, 8);  // Right justify
-    if (editinterval) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}
+    display.setCursor(160, 8*2);  // Right justify
+    display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
+    if (editinterval) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
     display.print(sleeptimeSecs);
     display.println("s");
 
+    // Toggle Chart
     if (menusel == 3) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Toggle Chart");
-    display.setCursor(160, 8*2);  // Right justify
+    display.setCursor(160, 8*3);  // Right justify
+    display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     display.println(showDewpoint ? "D" : "H");
 
+    // Set Rotation
     if (menusel == 4) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Set Rotation");
-    display.setCursor(160, 8*3);  // Right justify
-    if (editRotation) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}
+    display.setCursor(160, 8*4);  // Right justify
+    display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
+    if (editRotation) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
     display.println(displayRotation);
 
+    // Anti-Ghost
     if (menusel == 5) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Anti-Ghost");
-    display.setCursor(160, 8*4);  // Right justify
+    display.setCursor(160, 8*5);  // Right justify
+    display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     display.println(antiGhosting ? "Y" : "N");
 
+    // Tick Rate
     if (menusel == 6) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
+    display.print("Tick Rate");
+    display.setCursor(160, 8*6);  // Right justify
+    display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
+    if (editTickRate) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
+    display.println(tickRate);
+
+    // Exit
+    if (menusel == 7) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.println("Exit");
+
 
     // Status area at bottom
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);
@@ -266,7 +286,7 @@ void displayMenu() {
     display.print(h, 1);
     display.print("% P:");
     display.print(pres, 0);
-    display.print("hPa ");
+    display.print("hPa B:");
     display.print(vBat, 2);
     display.print("v");
 
@@ -294,34 +314,47 @@ void wipeScreen() {
 void setupChart() {
   display.setTextSize(1);
   display.setFont();
-  display.setCursor(0, 0);
-  display.print("<");
+  
+  // Draw Y-axis ticks - 9 ticks creating 10 spaces
+  for(int i = 0; i <= 200; i+=20) {
+      display.drawLine(0, i, 3, i, GxEPD_BLACK);  // 3 pixel wide ticks
+  }
+  display.drawLine(0, 0, 3, 0, GxEPD_BLACK);  // 3 pixel wide ticks
+  display.drawLine(0, 199, 3, 199, GxEPD_BLACK);  // 3 pixel wide ticks
+  
+  // Draw X-axis ticks - one every 10 data points
+  int numTicks = (readingCount - 1) / tickRate;
+  if(numTicks > 0) {
+      float xStep = 200.0 / numTicks;
+      for(int i = 1; i < numTicks; i++) {
+          int x = i * xStep;
+          display.drawLine(x, 189, x, 192, GxEPD_BLACK);
+      }
+  }
+
+  // Rest of original chart decorations
+  display.setCursor(4, 0);
   display.print(maxVal, 3);
 
-  // Adjusted for bottom of 200x200 display
-  display.setCursor(0, 193);
-  display.print("<");
+  display.setCursor(4, 193);
   display.print(minVal, 3);
 
-  // Adjusted for horizontal placement of the additional text
-  display.setCursor(100, 193);
+  // Battery and other indicators remain unchanged
+  display.setCursor(70, 193);
   display.print("<#");
   display.print(readingCount - 1, 0);
   display.print("*");
   display.print(sleeptimeSecs, 0);
   display.print("s>");
-  int barx = mapf(vBat, 3.3, 4.1, 0, 19);  // Map battery value to progress bar width
+  
+  int barx = mapf(vBat, 3.3, 4.1, 0, 19);
   if (barx > 19) { barx = 19; }
   if (barx < 0) { barx = 0; }
-  // Adjusted rectangle and progress bar to fit within bounds
-  display.drawRect(179, 192, 19, 7, GxEPD_BLACK);    // Rectangle moved to fit fully within 200x200
-  display.fillRect(179, 192, barx, 7, GxEPD_BLACK);  // Progress bar inside the rectangle
-
-  // Adjusted marker lines to stay within bounds
+  display.drawRect(179, 192, 19, 7, GxEPD_BLACK);
+  display.fillRect(179, 192, barx, 7, GxEPD_BLACK);
   display.drawLine(198, 193, 198, 198, GxEPD_BLACK);
   display.drawLine(199, 193, 199, 198, GxEPD_BLACK);
 
-  // Set the cursor for additional chart decorations
   display.setCursor(80, 0);
 }
 
@@ -516,6 +549,30 @@ void doBatDisplay() {
   //do {
     display.fillRect(0, 0, display.width(), display.height(), GxEPD_WHITE);
 
+    // Draw Y-axis ticks - 9 ticks creating 10 spaces
+    for(int i = 0; i <= 200; i+=20) {
+        display.drawLine(0, i, 3, i, GxEPD_BLACK);  // 3 pixel wide ticks
+    }
+    display.drawLine(0, 0, 3, 0, GxEPD_BLACK);  // 3 pixel wide ticks
+    display.drawLine(0, 199, 3, 199, GxEPD_BLACK);  // 3 pixel wide ticks
+    
+    // Draw X-axis ticks - one every 10 data points
+    int numTicks = (readingCount - 1) / tickRate;
+    if(numTicks > 0) {
+        float xStep = 200.0 / numTicks;
+        for(int i = 1; i < numTicks; i++) {
+            int x = i * xStep;
+            display.drawLine(x, 189, x, 192, GxEPD_BLACK);
+        }
+    }
+
+    // Rest of original chart decorations
+    display.setCursor(4, 0);
+    display.print(maxVal, 3);
+
+    display.setCursor(4, 193);
+    display.print(minVal, 3);
+
     for (int i = maxArray - readingCount; i < (maxArray - 1); i++) {
       int x0 = (i - (maxArray - readingCount)) * xStep;
       int y0 = 199 - ((array4[i] - minVal) * yScale);  // Adjusted for vertical range
@@ -526,19 +583,14 @@ void doBatDisplay() {
       }
     }
 
-    display.setCursor(0, 0);
-    display.print("<");
-    display.print(maxVal, 3);
-    display.setCursor(0, 193);  // Adjusted to stay 7px from the bottom
-    display.print("<");
-    display.print(minVal, 3);
-    display.setCursor(120, 193);  // Adjusted for new width
+
+    display.setCursor(70, 193);  // Adjusted for new width
     display.print("<#");
     display.print(readingCount - 1, 0);
     display.print("*");
     display.print(sleeptimeSecs, 0);
     display.print("s>");
-    display.setCursor(175, 193);  // Adjusted for new width
+
 
     int batPct = mapf(vBat, 3.3, 4.1, 0, 100);
     display.setCursor(80, 0);  // Same placement
@@ -686,10 +738,11 @@ void doSesnors() {
 void setup() {
   Wire.begin();
   preferences.begin("my-app", false);
-  sleeptimeSecs = preferences.getInt("sleeptimeSecs", 300);
-  showDewpoint = preferences.getBool("showDewpoint", false);
-  antiGhosting = preferences.getBool("antiGhost", false);  // Load anti-ghosting setting
-  displayRotation = preferences.getInt("rotation", 2);
+    sleeptimeSecs = preferences.getInt("sleeptimeSecs", 300);
+    showDewpoint = preferences.getBool("showDewpoint", false);
+    antiGhosting = preferences.getBool("antiGhost", false);
+    displayRotation = preferences.getInt("rotation", 2);
+    tickRate = preferences.getInt("tickRate", 12);  // Load tickrate
   preferences.end();
   vBat = analogReadMilliVolts(0) / 500.0;
   while (vBat < 2) {
@@ -714,6 +767,7 @@ void setup() {
   display.init(115200, false, 10, false);  // void init(uint32_t serial_diag_bitrate, bool initial, uint16_t reset_duration = 10, bool pulldown_rst_mode = false)
   display.setRotation(displayRotation);
   display.setFont();
+  
   pinMode(0, INPUT_PULLUP);
   pinMode(1, INPUT_PULLUP);
   pinMode(2, INPUT_PULLUP);
@@ -764,11 +818,15 @@ void setup() {
   switch (GPIO_reason) {
     case 1:
       delay(50);
+      display.fillScreen(GxEPD_WHITE);
+      display.print("Loading Menu...");
       while (!digitalRead(1)) {
         display.print(".");
         display.display(true);
         delay(10);
         if (millis() > 5000) {
+          display.print("Okay let go!");
+          display.display(true);
           while (!digitalRead(1)) { delay(1); }
           if (bmo == 3) {bmo = 1;} else {bmo++;}
           displayMenu();
@@ -808,7 +866,7 @@ void loop() {
     esp_deep_sleep_start();
   }
 
-  if (!digitalRead(3)) {
+  if (!digitalRead(1)) {
     doSesnors();
     if (editRotation) {
       displayRotation++;
@@ -817,15 +875,18 @@ void loop() {
     } else if (editinterval) {
       sleeptimeSecs += 30;
       if (sleeptimeSecs > 86400) sleeptimeSecs = 30;
+    } else if (editTickRate) {
+      tickRate += 1;
+      if (tickRate > 250) tickRate = 2;
     } else {
-      menusel++;
-      if (menusel > MENU_MAX) menusel = 1;
+        menusel++;
+        if (menusel > MENU_MAX) menusel = 1;
     }
     displayMenu();
     delay(200);
   }
 
-  if (!digitalRead(1)) {
+  if (!digitalRead(3)) {
     doSesnors();
     if (editRotation) {
       displayRotation--;
@@ -834,9 +895,12 @@ void loop() {
     } else if (editinterval) {
       sleeptimeSecs -= 30;
       if (sleeptimeSecs < 30) sleeptimeSecs = 86400;
+    } else if (editTickRate) {
+      tickRate -= 1;
+      if (tickRate < 2) tickRate = 250;
     } else {
-      menusel--;
-      if (menusel < 1) menusel = MENU_MAX;
+        menusel--;
+        if (menusel < 1) menusel = MENU_MAX;
     }
     displayMenu();
     delay(200);
@@ -880,7 +944,16 @@ void loop() {
           preferences.end();
           displayMenu();
           break;
-      case 6:  // Exit (previously case 5)
+      case 6:  // Tick Rate
+          editTickRate = !editTickRate;
+          if (!editTickRate) {  // Save when exiting edit mode
+              preferences.begin("my-app", false);
+              preferences.putInt("tickRate", tickRate);
+              preferences.end();
+          }
+          displayMenu();
+          break;
+      case 7:  // Exit (previously case 6)
           esp_sleep_enable_timer_wakeup(1 * 1000000ULL);
           delay(1);
           esp_deep_sleep_start();
