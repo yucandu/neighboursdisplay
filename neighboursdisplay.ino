@@ -236,7 +236,7 @@ void displayMenu() {
     // Change Interval
     if (menusel == 2) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Change Interval");
-    display.setCursor(160, 8*2);  // Right justify
+    display.setCursor(160, 8);  // Right justify
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     if (editinterval) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
     display.print(sleeptimeSecs);
@@ -245,14 +245,14 @@ void displayMenu() {
     // Toggle Chart
     if (menusel == 3) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Toggle Chart");
-    display.setCursor(160, 8*3);  // Right justify
+    display.setCursor(160, 8*2);  // Right justify
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     display.println(showDewpoint ? "D" : "H");
 
     // Set Rotation
     if (menusel == 4) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Set Rotation");
-    display.setCursor(160, 8*4);  // Right justify
+    display.setCursor(160, 8*3);  // Right justify
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     if (editRotation) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
     display.println(displayRotation);
@@ -260,14 +260,14 @@ void displayMenu() {
     // Anti-Ghost
     if (menusel == 5) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Anti-Ghost");
-    display.setCursor(160, 8*5);  // Right justify
+    display.setCursor(160, 8*4);  // Right justify
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     display.println(antiGhosting ? "Y" : "N");
 
     // Tick Rate
     if (menusel == 6) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);} else {display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);}
     display.print("Tick Rate");
-    display.setCursor(160, 8*6);  // Right justify
+    display.setCursor(160, 8*5);  // Right justify
     display.setTextColor(GxEPD_BLACK, GxEPD_WHITE);  // Reset color for value
     if (editTickRate) {display.setTextColor(GxEPD_WHITE, GxEPD_BLACK);}  // Highlight only when editing
     display.println(tickRate);
