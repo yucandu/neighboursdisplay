@@ -794,7 +794,7 @@ void loop()
       display.setRotation(displayRotation);
     } else if (editinterval) {
         sleeptimeSecs += 30;
-        if (sleeptimeSecs > 3600) sleeptimeSecs = 30;
+        if (sleeptimeSecs > 86400) sleeptimeSecs = 30;
     } else {
         menusel++;
         if (menusel > MENU_MAX) menusel = 1;
@@ -810,7 +810,7 @@ if (!digitalRead(1)) {
       display.setRotation(displayRotation);
     } else if (editinterval) {
         sleeptimeSecs -= 30;
-        if (sleeptimeSecs < 30) sleeptimeSecs = 3600;
+        if (sleeptimeSecs < 30) sleeptimeSecs = 86400;
     } else {
         menusel--;
         if (menusel < 1) menusel = MENU_MAX;
